@@ -32,45 +32,52 @@ with col2:
 selected_city = st.selectbox('Select host city', sorted(cities))
 
 # Target input
-target = st.number_input('Target')
+target = st.number_input('Target', min_value=0.0)
 
 # Score, overs, and wickets input
 col3, col4, col5 = st.columns(3)
 
 with col3:
-    score = st.number_input('Score')
+    score = st.number_input('Score', min_value=0.0)
 with col4:
-    overs = st.number_input('Overs completed')
+    overs = st.number_input('Overs completed', min_value=0.0, max_value=20.0)
 with col5:
-    wickets = st.number_input('Wickets out')
+    wickets = st.number_input('Wickets out', min_value=0, max_value=10, step=1)
 
-# Prediction button
-if st.button('Predict Probability'):
-    # Calculations
-    runs_left = target - score
-    balls_left = 120 - (overs * 6)
-    wickets = 10 - wickets
-    crr = score / overs if overs > 0 else 0
-    rrr = (runs_left * 6) / balls_left if balls_left > 0 else 0
+# Validation checks
+if overs > 20:
+    st.error("Enter a valid number of overs (0-20).")
+elif wickets < 0 or wickets > 10:
+    st.error("Enter a valid number of wickets (0-10).")
+else:
+    # Prediction button
+    if st.button('Predict Probability'):
+        # Calculations
+        runs_left = target - score
+        balls_left = 120 - (overs * 6)
+        wickets_remaining = 10 - wickets
+        crr = score / overs if overs > 0 else 0
+        rrr = (runs_left * 6) / balls_left if balls_left > 0 else 0
 
-    # Prepare input dataframe
-    input_df = pd.DataFrame({
-        'batting_team': [batting_team],
-        'bowling_team': [bowling_team],
-        'city': [selected_city],
-        'runs_left': [runs_left],
-        'balls_left': [balls_left],
-        'wickets': [wickets],
-        'total_runs_x': [target],
-        'crr': [crr],
-        'rrr': [rrr]
-    })
+        # Prepare input dataframe
+        input_df = pd.DataFrame({
+            'batting_team': [batting_team],
+            'bowling_team': [bowling_team],
+            'city': [selected_city],
+            'runs_left': [runs_left],
+            'balls_left': [balls_left],
+            'wickets': [wickets_remaining],
+            'total_runs_x': [target],
+            'crr': [crr],
+            'rrr': [rrr]
+        })
 
-    # Prediction
-    result = pipe.predict_proba(input_df)
-    loss = result[0][0]
-    win = result[0][1]
+        # Prediction
+        result = pipe.predict_proba(input_df)
+        loss = result[0][0]
+        win = result[0][1]
 
-    # Display probabilities
-    st.header(f"{batting_team} - {round(win * 100)}%")
-    st.header(f"{bowling_team} - {round(loss * 100)}%")
+        # Display probabilities
+        st.header(f"{batting_team} - {round(win * 100)}%")
+        st.header(f"{bowling_team} - {round(loss * 100)}%")
+
